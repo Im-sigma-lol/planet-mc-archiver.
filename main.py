@@ -1,28 +1,27 @@
-import os
 import requests
-from http.cookiejar import MozillaCookieJar
 from bs4 import BeautifulSoup
 
-def load_cookies(file_path):
-    cj = MozillaCookieJar()
-    cj.load(file_path, ignore_discard=True, ignore_expires=True)
-    return cj
+USERNAME = "mattbatwings"  # change with -u flag in final version
+PHPSESSID = ""  # paste your cookie value here
 
-cookies = load_cookies("cookies.txt")
-headers = {
+session = requests.Session()
+session.headers.update({
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-}
+})
+session.cookies.set("PHPSESSID", PHPSESSID, domain="planetminecraft.com")
 
-url = "https://www.planetminecraft.com/member/mattbatwings/"
+url = f"https://www.planetminecraft.com/member/{USERNAME}/?p=1"
+response = session.get(url)
 
-r = requests.get(url, headers=headers, cookies=cookies)
-
-if r.status_code == 200:
-    print("[SUCCESS] Page loaded. Here's a preview:")
-    soup = BeautifulSoup(r.text, 'html.parser')
-    for link in soup.select("a[href]"):
-        href = link["href"]
-        if any(href.endswith(ext) for ext in [".zip", ".schematic", ".mcworld"]):
-            print("Download:", href)
+if response.status_code == 200:
+    print("[SUCCESS] Loaded page")
+    soup = BeautifulSoup(response.text, "html.parser")
+    
+    # Extract project links
+    projects = soup.select("a.stretched-link")
+    for a in projects:
+        title = a.get("title")
+        href = a.get("href")
+        print("Project:", title, "->", f"https://www.planetminecraft.com{href}")
 else:
-    print(f"[FAIL] Status code: {r.status_code}")
+    print(f"[ERROR] Status code {response.status_code}")
